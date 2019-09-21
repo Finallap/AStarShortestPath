@@ -12,12 +12,16 @@ class AStar:
         self.close_set = []
         self.start_point = start_point
         self.end_point = end_point
+
+        # 数据集1的参数
         # self.Alpha1 = 25
         # self.Alpha2 = 15
         # self.Beta1 = 20
         # self.Beta2 = 25
         # self.Delte = 0.001
         # self.Theta = 30
+
+        # 数据集2的参数
         self.Alpha1 = 20
         self.Alpha2 = 10
         self.Beta1 = 15
@@ -62,21 +66,14 @@ class AStar:
         dis = self.Distance(current, parent)
         deviation = dis * self.Delte
 
-        if current.type == 1 and horizontal + deviation <= self.Alpha1 and vertical + deviation <= self.Alpha2:
+        if current.type == 1 and vertical + deviation <= self.Alpha1 and horizontal + deviation <= self.Alpha2:
             return True
-        elif current.type == 0 and horizontal + deviation <= self.Beta1 and vertical + deviation <= self.Beta2:
+        elif current.type == 0 and vertical + deviation <= self.Beta1 and horizontal + deviation <= self.Beta2:
             return True
-        elif current.type == 3 and horizontal + deviation <= self.Theta and vertical + deviation <= self.Theta:
+        elif current.type == 3 and vertical + deviation <= self.Theta and horizontal + deviation <= self.Theta:
             return True
         else:
             return False
-
-    def IsValidPoint(self, current, parent):
-        if current.x < 0 or current.y < 0 or current.z < 0:
-            return False
-        if self.IsReachablePoint(current, parent):
-            return True
-        return False
 
     def IsInPointList(self, p, point_list):
         for point in point_list:
@@ -102,40 +99,46 @@ class AStar:
         plt.savefig(filename)
 
     def ProcessPoint(self, current, parent, ax, plt):
-        if not self.IsValidPoint(current, parent):
-            return  # Do nothing for invalid point
+        # CloseList中的点已经访问过，不再次进行访问，直接返回
         if self.IsInCloseList(current):
-            return  # Do nothing for visited point
+            return
+
+        # 输出访问点的信息
         # print('Process Point [', current.num, ',', current.x, ',', current.y, ',', current.z, ']', ', cost: ',
         #       self.TotalCost(current))
-        # todo 校验的约束条件在这里
+
+        # OpenList中的点也不再次进行访问
+        # 判断累计误差是否满足校验标准，满足才继续进一步处理
         if not self.IsInOpenList(current) and self.IsSatisfyError(current, parent, parent.horizontal, parent.vertical):
-            # if not self.IsInOpenList(current):
+            # 计算目前选中的点和父节点将会发生的误差
             dis = self.Distance(current, parent)
             deviation = dis * self.Delte
 
             # 进行误差校正
             if current.type == 0:
-                current.vertical = 0
-            else:
-                current.vertical = parent.vertical + deviation
-
-            if current.type == 1:
                 current.horizontal = 0
             else:
                 current.horizontal = parent.horizontal + deviation
 
+            if current.type == 1:
+                current.vertical = 0
+            else:
+                current.vertical = parent.vertical + deviation
+
             current.parent = parent
             current.cost = self.TotalCost(current)
-            self.open_set.append(current)
+            self.open_set.append(current)#将目前选中的点加入open_set
+
+            # 输出访问点的信息
             print('Process Point [', current.num, ']', ', cost: ',
                   self.TotalCost(current), ',current horizontal:', current.horizontal, ',current vertical:',
                   current.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical)
-            # 画图
-            x = [current.x, parent.x]
-            y = [current.y, parent.y]
-            z = [current.z, parent.z]
+
+            # 对查找过程进行画图，只输出结果时候可注释
+            # x = [current.x, parent.x]
+            # y = [current.y, parent.y]
+            # z = [current.z, parent.z]
             # 将数组中的前两个点进行连线
             # ax.plot(x, y, z, c='r')
             # plt.draw()
@@ -153,7 +156,7 @@ class AStar:
             index += 1
         return selected_index
 
-    # todo BuildPath
+    # 回溯输出最佳路径
     def BuildPath(self, p, ax, plt, start_time):
         path = []
         while True:
@@ -162,7 +165,8 @@ class AStar:
                 break
             else:
                 p = p.parent
-            parent = self.start_point
+
+        parent = self.start_point
         for p in path:
             # 画图
             x = [parent.x, p.x]
@@ -170,15 +174,24 @@ class AStar:
             z = [parent.z, p.z]
             # 将数组中的前两个点进行连线
             ax.plot(x, y, z, c='k')
-            plt.draw()
-            self.SaveImage(plt)
+            #每画一个点便保存一张图片，不要可以注释
+            # plt.draw()
+            # self.SaveImage(plt)
+
+            #输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']', ', \ncost: ', p.cost,
                   ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
             parent = p
+        #保存结果图片
+        plt.draw()
+        self.SaveImage(plt)
+
+        #输出运行时间
         end_time = time.time()
         print('===== Algorithm finish in', int(end_time - start_time), ' seconds')
 
+    # 查找能与目前的点可联通的点（只考虑两点间误差是否大于阈值，不考虑累计误差）
     def FindFeasiblePoint(self, current):
         feasible_point_list = []
         for i in range(len(self.map.point_list_numpy)):
@@ -196,26 +209,33 @@ class AStar:
     def RunAndSaveImage(self, ax, plt):
         start_time = time.time()
 
+        #初始化起点的cost，horizontal误差，vertical误差，并将其放入open_set
         self.start_point.cost = 0
         self.start_point.horizontal = 0
         self.start_point.vertical = 0
         self.open_set.append(self.start_point)
 
         while True:
+            #选取open_set中，优先级最高（cost最小）的点进行尝试
             index = self.SelectPointInOpenList()
+
+            #如果open_set中已经不存在点，则路径寻找失败
             if index < 0:
                 print('No path found, algorithm failed!!!')
                 return
             p = self.open_set[index]
 
+            # 判断是否抵达终点，如果到达抵达终点，则使用BuildPath回溯输出最佳路径
             if self.IsEndPoint(p):
                 return self.BuildPath(p, ax, plt, start_time)
 
+            # 没有抵达终点，则将这个点从open_set中删除，放入close_set
             del self.open_set[index]
             self.close_set.append(p)
 
-            # 找最基础可行的点
+            # 查找能与目前的点p可联通的点（只考虑两点间误差是否大于阈值，不考虑累计误差）
             feasible_point_list = self.FindFeasiblePoint(p)
 
+            #对可连通的点依次进行进一步判断尝试
             for next_point in feasible_point_list:
                 self.ProcessPoint(next_point, p, ax, plt)

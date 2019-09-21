@@ -1,4 +1,4 @@
-# random_map.py
+# point_map.py
 import numpy as np
 import point
 import xlrd
