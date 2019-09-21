@@ -1,6 +1,6 @@
 # point.py
-
 import sys
+
 
 class Point:
     def __init__(self, num, x, y, z, type, flag):

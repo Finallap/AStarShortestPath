@@ -1,10 +1,8 @@
 # a_star.py
-
 import sys
 import time
 import math
 import point
-import random_map
 
 
 class AStar:
@@ -112,7 +110,7 @@ class AStar:
         #       self.TotalCost(current))
         # todo 校验的约束条件在这里
         if not self.IsInOpenList(current) and self.IsSatisfyError(current, parent, parent.horizontal, parent.vertical):
-        # if not self.IsInOpenList(current):
+            # if not self.IsInOpenList(current):
             dis = self.Distance(current, parent)
             deviation = dis * self.Delte
 
@@ -175,8 +173,8 @@ class AStar:
             plt.draw()
             self.SaveImage(plt)
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']', ', \ncost: ', p.cost,
-                  ',current horizontal:', p.horizontal, ',current vertical:',p.vertical,
-                  ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical,'\n')
+                  ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
+                  ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
             parent = p
         end_time = time.time()
         print('===== Algorithm finish in', int(end_time - start_time), ' seconds')

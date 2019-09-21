@@ -1,14 +1,14 @@
 # random_map.py
-
 import numpy as np
-from scipy.io import loadmat
 import point
 import xlrd
+from scipy.io import loadmat
+
 
 class Map:
-    def __init__(self):
-        excel = xlrd.open_workbook("G:/研究生课程相关/研究生数学建模/2019年中国研究生数学建模竞赛F题/a-star/附件2：数据集2-终稿.xlsx")
-        sheet = excel.sheet_by_name('data2')
+    def __init__(self, data_path, data_sheet_name):
+        excel = xlrd.open_workbook(data_path)
+        sheet = excel.sheet_by_name(data_sheet_name)
         rows = sheet.nrows  # 获取行数
         cols = sheet.ncols  # 获取列数
         data = np.zeros(shape=(rows - 2, cols))
@@ -18,9 +18,8 @@ class Map:
             p = point.Point(r_values[0], r_values[1], r_values[2], r_values[3], r_values[4], r_values[5])
             data[r - 2] = [r_values[0], r_values[1], r_values[2], r_values[3], r_values[4], r_values[5]]
 
-        mat_path = "G:/研究生课程相关/研究生数学建模/2019年中国研究生数学建模竞赛F题/pre_data.mat"
-        mat_data = loadmat(mat_path)
-
         self.point_list_numpy = data
-        self.pre_data_numpy = mat_data['pre_data']
 
+        # mat_path = "pre_data.mat"
+        # mat_data = loadmat(mat_path)
+        # self.pre_data_numpy = mat_data['pre_data']
