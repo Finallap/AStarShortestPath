@@ -127,12 +127,12 @@ class AStar:
 
             current.parent = parent
             current.cost = self.TotalCost(current)
-            self.open_set.append(current)#将目前选中的点加入open_set
+            self.open_set.append(current)  # 将目前选中的点加入open_set
 
             # 输出访问点的信息
-            print('Process Point [', current.num, ']', ', cost: ',
-                  self.TotalCost(current), ',current horizontal:', current.horizontal, ',current vertical:',
-                  current.vertical,
+            print('Process Point [', current.num, ']', ', cost: ', self.TotalCost(current),
+                  ', Type: ', current.type,
+                  ',current horizontal:', current.horizontal, ',current vertical:', current.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical)
 
             # 对查找过程进行画图，只输出结果时候可注释
@@ -174,20 +174,26 @@ class AStar:
             z = [parent.z, p.z]
             # 将数组中的前两个点进行连线
             ax.plot(x, y, z, c='k')
-            #每画一个点便保存一张图片，不要可以注释
+            # 每画一个点便保存一张图片，不要可以注释
             # plt.draw()
             # self.SaveImage(plt)
 
-            #输出最短路径信息
-            print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']', ', \ncost: ', p.cost,
+            # 计算目前选中的点和父节点将会发生的误差
+            dis = self.Distance(p, parent)
+            deviation = dis * self.Delte
+
+            # 输出最短路径信息
+            print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
+                  ', \ncost: ', p.cost, ', Type: ', p.type,
+                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:', parent.vertical+ deviation, '\n'
                   ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
             parent = p
-        #保存结果图片
+        # 保存结果图片
         plt.draw()
         self.SaveImage(plt)
 
-        #输出运行时间
+        # 输出运行时间
         end_time = time.time()
         print('===== Algorithm finish in', int(end_time - start_time), ' seconds')
 
@@ -209,17 +215,17 @@ class AStar:
     def RunAndSaveImage(self, ax, plt):
         start_time = time.time()
 
-        #初始化起点的cost，horizontal误差，vertical误差，并将其放入open_set
+        # 初始化起点的cost，horizontal误差，vertical误差，并将其放入open_set
         self.start_point.cost = 0
         self.start_point.horizontal = 0
         self.start_point.vertical = 0
         self.open_set.append(self.start_point)
 
         while True:
-            #选取open_set中，优先级最高（cost最小）的点进行尝试
+            # 选取open_set中，优先级最高（cost最小）的点进行尝试
             index = self.SelectPointInOpenList()
 
-            #如果open_set中已经不存在点，则路径寻找失败
+            # 如果open_set中已经不存在点，则路径寻找失败
             if index < 0:
                 print('No path found, algorithm failed!!!')
                 return
@@ -236,6 +242,6 @@ class AStar:
             # 查找能与目前的点p可联通的点（只考虑两点间误差是否大于阈值，不考虑累计误差）
             feasible_point_list = self.FindFeasiblePoint(p)
 
-            #对可连通的点依次进行进一步判断尝试
+            # 对可连通的点依次进行进一步判断尝试
             for next_point in feasible_point_list:
                 self.ProcessPoint(next_point, p, ax, plt)

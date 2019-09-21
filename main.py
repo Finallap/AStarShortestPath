@@ -6,13 +6,13 @@ import point_map
 import a_star
 
 # 设置数据读取的路径以及工作表名称
-data_path = "附件2：数据集2-终稿.xlsx"
-data_sheet_name = 'data2'
+data_path = "附件1：数据集1-终稿.xlsx"
+data_sheet_name = 'data1'
 
 # 创建所有点的Map
 point_map = point_map.Map(data_path, data_sheet_name)
 
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(15, 15))
 x, y, z = point_map.point_list_numpy[:, 1], point_map.point_list_numpy[:, 2], point_map.point_list_numpy[:, 3]
 ax = plt.gca(projection='3d')  # 创建一个三维的绘图工程
 #  绘制校正点散点图
@@ -21,8 +21,6 @@ ax.scatter(x, y, z, c='y')  # 绘制数据点
 ax.set_zlabel('Z')
 ax.set_ylabel('Y')
 ax.set_xlabel('X')
-
-# plt.show()
 
 # 创建起终点point对象
 start_point = point.Point(point_map.point_list_numpy[0][0],
