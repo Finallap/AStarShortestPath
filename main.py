@@ -8,10 +8,10 @@ import point_map
 import a_star
 
 # 设置数据读取的路径以及工作表名称
-# data_path = "附件1：数据集1-终稿.xlsx"
-# data_sheet_name = 'data1'
-data_path = "附件2：数据集2-终稿.xlsx"
-data_sheet_name = 'data2'
+data_path = "附件1：数据集1-终稿.xlsx"
+data_sheet_name = 'data1'
+# data_path = "附件2：数据集2-终稿.xlsx"
+# data_sheet_name = 'data2'
 
 # 创建所有点的Map
 point_map = point_map.Map(data_path, data_sheet_name)

@@ -3,6 +3,8 @@ import sys
 import time
 import math
 import point
+import csv
+import numpy as np
 
 
 class AStar:
@@ -14,20 +16,20 @@ class AStar:
         self.end_point = end_point
 
         # 数据集1的参数
-        # self.Alpha1 = 25
-        # self.Alpha2 = 15
-        # self.Beta1 = 20
-        # self.Beta2 = 25
-        # self.Delte = 0.001
-        # self.Theta = 30
+        self.Alpha1 = 25
+        self.Alpha2 = 15
+        self.Beta1 = 20
+        self.Beta2 = 25
+        self.Delte = 0.001
+        self.Theta = 30
 
         # 数据集2的参数
-        self.Alpha1 = 20
-        self.Alpha2 = 10
-        self.Beta1 = 15
-        self.Beta2 = 20
-        self.Delte = 0.001
-        self.Theta = 20
+        # self.Alpha1 = 20
+        # self.Alpha2 = 10
+        # self.Beta1 = 15
+        # self.Beta2 = 20
+        # self.Delte = 0.001
+        # self.Theta = 20
 
     def Distance(self, current, parent):
         x_dis = current.x - parent.x
@@ -125,6 +127,8 @@ class AStar:
             else:
                 current.vertical = parent.vertical + deviation
 
+            current.distance = dis
+            current.cumulative_distance = parent.cumulative_distance + dis
             current.parent = parent
             current.cost = self.TotalCost(current)
             self.open_set.append(current)  # 将目前选中的点加入open_set
@@ -158,6 +162,9 @@ class AStar:
 
     # 回溯输出最佳路径
     def BuildPath(self, p, ax, plt, start_time):
+        data = np.array(['num', 'x', 'y', 'z', 'type', 'before horizontal',
+                         'before vertical', 'after horizontal', 'after vertical', 'distance', 'cumulative distance'])
+
         path = []
         while True:
             path.insert(0, p)  # Insert first
@@ -173,7 +180,7 @@ class AStar:
             y = [parent.y, p.y]
             z = [parent.z, p.z]
             # 将数组中的前两个点进行连线
-            ax.plot(x, y, z, c='k',label='飞行路线')
+            ax.plot(x, y, z, c='k', label='飞行路线')
             # 每画一个点便保存一张图片，不要可以注释
             # plt.draw()
             # self.SaveImage(plt)
@@ -185,13 +192,24 @@ class AStar:
             # 输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
                   ', \ncost: ', p.cost, ', Type: ', p.type,
-                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:', parent.vertical+ deviation, '\n'
-                  ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
+                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:',
+                  parent.vertical + deviation, '\n'
+                                               ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
+
+            data = np.row_stack((data, [p.num, p.x, p.y, p.z, p.type, parent.horizontal + deviation,
+                                        parent.vertical + deviation, p.horizontal, p.vertical, p.distance,
+                                        p.cumulative_distance]))
+
             parent = p
         # 保存结果图片
         plt.draw()
         self.SaveImage(plt)
+
+        with open('Record.csv', 'w', newline='') as t_file:
+            csv_writer = csv.writer(t_file)
+            for l in data:
+                csv_writer.writerow(l)
 
         # 输出运行时间
         end_time = time.time()
@@ -219,6 +237,8 @@ class AStar:
         self.start_point.cost = 0
         self.start_point.horizontal = 0
         self.start_point.vertical = 0
+        self.start_point.distance = 0
+        self.start_point.cumulative_distance = 0
         self.open_set.append(self.start_point)
 
         while True:
