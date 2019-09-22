@@ -16,20 +16,20 @@ class AStar:
         self.end_point = end_point
 
         # 数据集1的参数
-        self.Alpha1 = 25
-        self.Alpha2 = 15
-        self.Beta1 = 20
-        self.Beta2 = 25
-        self.Delte = 0.001
-        self.Theta = 30
+        # self.Alpha1 = 25
+        # self.Alpha2 = 15
+        # self.Beta1 = 20
+        # self.Beta2 = 25
+        # self.Delte = 0.001
+        # self.Theta = 30
 
         # 数据集2的参数
-        # self.Alpha1 = 20
-        # self.Alpha2 = 10
-        # self.Beta1 = 15
-        # self.Beta2 = 20
-        # self.Delte = 0.001
-        # self.Theta = 20
+        self.Alpha1 = 20
+        self.Alpha2 = 10
+        self.Beta1 = 15
+        self.Beta2 = 20
+        self.Delte = 0.001
+        self.Theta = 20
 
     def Distance(self, current, parent):
         x_dis = current.x - parent.x
@@ -46,7 +46,10 @@ class AStar:
         return self.Distance(p, self.end_point)
 
     def TotalCost(self, p):
-        # return self.HeuristicCost(p)
+        # if p.flag == 1:
+        #     Penalty = 5000
+        # else:
+        #     Penalty = 0
         return self.BaseCost(p) + self.HeuristicCost(p)
 
     def IsReachablePoint(self, current, parent):
@@ -66,6 +69,9 @@ class AStar:
 
     def IsSatisfyError(self, current, parent, horizontal, vertical):
         dis = self.Distance(current, parent)
+
+        # if current.flag == 1:
+        #     dis = dis + 4000
         deviation = dis * self.Delte
 
         if current.type == 1 and vertical + deviation <= self.Alpha1 and horizontal + deviation <= self.Alpha2:
@@ -117,13 +123,17 @@ class AStar:
             deviation = dis * self.Delte
 
             # 进行误差校正
-            if current.type == 0:
+            if current.type == 0 and current.flag == 0:
                 current.horizontal = 0
+            elif current.type == 0 and current.flag == 1:
+                current.horizontal = 5
             else:
                 current.horizontal = parent.horizontal + deviation
 
-            if current.type == 1:
+            if current.type == 1 and current.flag == 0:
                 current.vertical = 0
+            elif current.type == 1 and current.flag == 1:
+                current.vertical = 5
             else:
                 current.vertical = parent.vertical + deviation
 
@@ -162,7 +172,7 @@ class AStar:
 
     # 回溯输出最佳路径
     def BuildPath(self, p, ax, plt, start_time):
-        data = np.array(['num', 'x', 'y', 'z', 'type', 'before horizontal',
+        data = np.array(['num', 'x', 'y', 'z', 'type', 'flag', 'before horizontal',
                          'before vertical', 'after horizontal', 'after vertical', 'distance', 'cumulative distance'])
 
         path = []
@@ -191,13 +201,13 @@ class AStar:
 
             # 输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
-                  ', \ncost: ', p.cost, ', Type: ', p.type,
+                  ', \ncost: ', p.cost, ', Type: ', p.type, ', flag: ', p.flag,
                   ',before horizontal:', parent.horizontal + deviation, ',before vertical:',
                   parent.vertical + deviation, '\n'
                                                ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
 
-            data = np.row_stack((data, [p.num, p.x, p.y, p.z, p.type, parent.horizontal + deviation,
+            data = np.row_stack((data, [p.num, p.x, p.y, p.z, p.type, p.flag, parent.horizontal + deviation,
                                         parent.vertical + deviation, p.horizontal, p.vertical, p.distance,
                                         p.cumulative_distance]))
 
