@@ -3,6 +3,7 @@ import sys
 import time
 import math
 import point
+import numpy as np
 
 
 class AStar:
@@ -12,6 +13,8 @@ class AStar:
         self.close_set = []
         self.start_point = start_point
         self.end_point = end_point
+
+        self.minR = 200
 
         # 数据集1的参数
         # self.Alpha1 = 25
@@ -44,8 +47,47 @@ class AStar:
         return self.Distance(p, self.end_point)
 
     def TotalCost(self, p):
-        # return self.HeuristicCost(p)
         return self.BaseCost(p) + self.HeuristicCost(p)
+
+    def FindArcRadius(self, p1, p2, p3):
+        p1 = np.array([p1.x, p1.y, p1.z])
+        p2 = np.array([p2.x, p2.y, p2.z])
+        p3 = np.array([p3.x, p3.y, p3.z])
+
+        acc = np.column_stack((np.row_stack((p1, p2, p3)), np.ones((3, 1))))
+        A1 = np.linalg.det(acc[:, 1:])
+        B1 = -np.linalg.det(acc[:, [0, 2, 3]])
+        C1 = np.linalg.det(acc[:, [0, 1, 3]])
+        D1 = -np.linalg.det(acc[:, [0, 1, 2]])
+
+        D2 = p1[0] * p1[0] - np.linalg.norm(p2, ord=2) * np.linalg.norm(p2, ord=2)
+        D3 = p1[0] * p1[0] - np.linalg.norm(p3, ord=2) * np.linalg.norm(p3, ord=2)
+
+        D = np.array([D1, D2, D3])
+        D = D.reshape(D.shape[0], 1)
+
+        ABC1 = np.array([A1, B1, C1])
+        ABC2 = 2 * (p2 - p1)
+        ABC3 = 2 * (p3 - p1)
+
+        Acc = np.row_stack((ABC1, ABC2, ABC3))
+        l4 = np.dot(-np.linalg.inv(Acc), D)
+        R = np.linalg.norm(p1 - l4.reshape(l4.shape[0], 1), ord=2)
+
+        return R
+
+    def FlyCircleDistance(self, p1, p2, p3, R):
+        p1 = np.array([p1.x, p1.y, p1.z])
+        p2 = np.array([p2.x, p2.y, p2.z])
+        p3 = np.array([p3.x, p3.y, p3.z])
+
+        vec1 = p1 - p2
+        vec2 = p3 - p2
+        ang1 = math.acos(np.dot(vec1, vec2.reshape(vec2.shape[0], 1)) /
+                         np.linalg.norm(vec1, ord=2) / np.linalg.norm(vec2, ord=2))
+
+        distance = np.linalg.norm(p1 - p2, ord=2) + R * ang1
+        return distance
 
     def IsReachablePoint(self, current, parent):
         dis = self.Distance(current, parent)
@@ -63,7 +105,13 @@ class AStar:
         return False
 
     def IsSatisfyError(self, current, parent, horizontal, vertical):
-        dis = self.Distance(current, parent)
+        if not parent.parent is None:
+            R = self.FindArcRadius(parent.parent, parent, current)
+            if R < self.minR or R is None:
+                return False
+            dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
+        else:
+            dis = self.Distance(current, parent)
         deviation = dis * self.Delte
 
         if current.type == 1 and vertical + deviation <= self.Alpha1 and horizontal + deviation <= self.Alpha2:
@@ -111,7 +159,12 @@ class AStar:
         # 判断累计误差是否满足校验标准，满足才继续进一步处理
         if not self.IsInOpenList(current) and self.IsSatisfyError(current, parent, parent.horizontal, parent.vertical):
             # 计算目前选中的点和父节点将会发生的误差
-            dis = self.Distance(current, parent)
+            if not parent.parent is None:
+                R = self.FindArcRadius(parent.parent, parent, current)
+                dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
+            else:
+                dis = self.Distance(current, parent)
+
             deviation = dis * self.Delte
 
             # 进行误差校正
@@ -185,8 +238,9 @@ class AStar:
             # 输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
                   ', \ncost: ', p.cost, ', Type: ', p.type,
-                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:', parent.vertical+ deviation, '\n'
-                  ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
+                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:',
+                  parent.vertical + deviation, '\n'
+                                               ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
             parent = p
         # 保存结果图片
@@ -219,6 +273,7 @@ class AStar:
         self.start_point.cost = 0
         self.start_point.horizontal = 0
         self.start_point.vertical = 0
+        self.start_point.parent = None
         self.open_set.append(self.start_point)
 
         while True:
