@@ -4,6 +4,7 @@ import time
 import math
 import point
 import numpy as np
+import csv
 
 
 class AStar:
@@ -182,6 +183,9 @@ class AStar:
             if not self.IsStartPoint(parent):
                 dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
                 deviation = dis * self.Delte
+                parent.distance = dis
+                parent.cumulative_distance = parent.parent.cumulative_distance + dis
+                parent.deviation = deviation
                 if parent.type == 0:
                     parent.horizontal = 0
                 else:
@@ -192,10 +196,13 @@ class AStar:
                     parent.vertical = parent.parent.vertical + deviation - self.Correction
 
             if self.IsEndPoint(current):
-                european_deviation = self.Distance(current, parent)
-                european_deviation = european_deviation * self.Delte
+                european_distance = self.Distance(current, parent)
+                european_deviation = european_distance * self.Delte
                 current.horizontal = parent.horizontal + european_deviation - self.Correction
                 current.vertical = parent.vertical + european_deviation - self.Correction
+                current.deviation = european_deviation
+                current.distance = european_distance
+                current.cumulative_distance = parent.cumulative_distance + european_distance
 
             current.parent = parent
             current.cost = self.TotalCost(current)
@@ -234,6 +241,9 @@ class AStar:
 
     # 回溯输出最佳路径
     def BuildPath(self, p, ax, plt, start_time):
+        data = np.array(['num', 'x', 'y', 'z', 'type', 'before horizontal',
+                         'before vertical', 'after horizontal', 'after vertical', 'distance', 'cumulative distance'])
+
         path = []
         while True:
             path.insert(0, p)  # Insert first
@@ -261,14 +271,26 @@ class AStar:
             # 输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
                   ', \ncost: ', p.cost, ', Type: ', p.type,
-                  ',before horizontal:', parent.horizontal + deviation - self.Correction, ',before vertical:',
-                  parent.vertical + deviation - self.Correction, '\n',
+                  ',before horizontal:', parent.horizontal + parent.distance * self.Delte - self.Correction,
+                  ',before vertical:',
+                  parent.vertical + parent.distance * self.Delte - self.Correction, '\n',
                   ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
+
+            data = np.row_stack((data, [p.num, p.x, p.y, p.z, p.type, parent.horizontal + parent.distance * self.Delte,
+                                        parent.vertical + parent.distance * self.Delte, p.horizontal, p.vertical,
+                                        p.distance,
+                                        p.cumulative_distance]))
+
             parent = p
         # 保存结果图片
         plt.draw()
         self.SaveImage(plt)
+
+        with open('Record.csv', 'w', newline='') as t_file:
+            csv_writer = csv.writer(t_file)
+            for l in data:
+                csv_writer.writerow(l)
 
         # 输出运行时间
         end_time = time.time()
@@ -296,6 +318,9 @@ class AStar:
         self.start_point.cost = 0
         self.start_point.horizontal = 0
         self.start_point.vertical = 0
+        self.start_point.distance = 0
+        self.start_point.deviation = 0
+        self.start_point.cumulative_distance = 0
         self.start_point.parent = None
         self.open_set.append(self.start_point)
 
