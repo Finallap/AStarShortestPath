@@ -173,7 +173,7 @@ class AStar:
             y = [parent.y, p.y]
             z = [parent.z, p.z]
             # 将数组中的前两个点进行连线
-            ax.plot(x, y, z, c='k')
+            ax.plot(x, y, z, c='k',label='飞行路线')
             # 每画一个点便保存一张图片，不要可以注释
             # plt.draw()
             # self.SaveImage(plt)
