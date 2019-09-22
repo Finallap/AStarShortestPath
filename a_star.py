@@ -23,6 +23,7 @@ class AStar:
         # self.Beta2 = 25
         # self.Delte = 0.001
         # self.Theta = 30
+        # self.Correction = 4.4
 
         # 数据集2的参数
         self.Alpha1 = 20
@@ -31,6 +32,7 @@ class AStar:
         self.Beta2 = 20
         self.Delte = 0.001
         self.Theta = 20
+        self.Correction = 2.55
 
     def Distance(self, current, parent):
         x_dis = current.x - parent.x
@@ -71,8 +73,8 @@ class AStar:
         ABC3 = 2 * (p3 - p1)
 
         Acc = np.row_stack((ABC1, ABC2, ABC3))
-        l4 = np.dot(-np.linalg.inv(Acc), D)
-        R = np.linalg.norm(p1 - l4.reshape(l4.shape[0], 1), ord=2)
+        p4 = np.dot(-np.linalg.inv(Acc), D)
+        R = np.linalg.norm(p1 - p4.reshape(p4.shape[0], 1), ord=2)
 
         return R
 
@@ -104,21 +106,40 @@ class AStar:
 
         return False
 
-    def IsSatisfyError(self, current, parent, horizontal, vertical):
-        if not parent.parent is None:
-            R = self.FindArcRadius(parent.parent, parent, current)
-            if R < self.minR or R is None:
+    def IsSatisfyError(self, current, parent):
+        european_dis = self.Distance(current, parent)
+        european_deviation = european_dis * self.Delte
+        if self.IsStartPoint(parent):
+            if current.type == 1 and european_deviation <= self.Alpha1 and european_deviation <= self.Alpha2:
+                return True
+            elif current.type == 0 and european_deviation <= self.Beta1 and european_deviation <= self.Beta2:
+                return True
+            else:
                 return False
-            dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
-        else:
-            dis = self.Distance(current, parent)
+
+        # if not parent.parent is None:
+        R = self.FindArcRadius(parent.parent, parent, current)
+        if R < self.minR or R is None:
+            return False
+        dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
         deviation = dis * self.Delte
 
-        if current.type == 1 and vertical + deviation <= self.Alpha1 and horizontal + deviation <= self.Alpha2:
+        if self.IsEndPoint(current):
+            if parent.type == 0:
+                parent.horizontal = 0
+            else:
+                parent.horizontal = parent.parent.horizontal + european_deviation
+            if parent.type == 1:
+                parent.vertical = 0
+            else:
+                parent.vertical = parent.parent.vertical + european_deviation
+
+            if parent.vertical + european_deviation > self.Theta or parent.horizontal + european_deviation > self.Theta:
+                return False
+
+        if parent.type == 1 and parent.parent.vertical + deviation <= self.Alpha1 and parent.parent.horizontal + deviation <= self.Alpha2:
             return True
-        elif current.type == 0 and vertical + deviation <= self.Beta1 and horizontal + deviation <= self.Beta2:
-            return True
-        elif current.type == 3 and vertical + deviation <= self.Theta and horizontal + deviation <= self.Theta:
+        elif parent.type == 0 and parent.parent.vertical + deviation <= self.Beta1 and parent.parent.horizontal + deviation <= self.Beta2:
             return True
         else:
             return False
@@ -151,32 +172,30 @@ class AStar:
         if self.IsInCloseList(current):
             return
 
-        # 输出访问点的信息
-        # print('Process Point [', current.num, ',', current.x, ',', current.y, ',', current.z, ']', ', cost: ',
-        #       self.TotalCost(current))
-
         # OpenList中的点也不再次进行访问
         # 判断累计误差是否满足校验标准，满足才继续进一步处理
-        if not self.IsInOpenList(current) and self.IsSatisfyError(current, parent, parent.horizontal, parent.vertical):
-            # 计算目前选中的点和父节点将会发生的误差
-            if not parent.parent is None:
-                R = self.FindArcRadius(parent.parent, parent, current)
+        if not self.IsInOpenList(current) and self.IsSatisfyError(current, parent):
+            # 开始更新误差
+            current.horizontal = None
+            current.vertical = None
+
+            if not self.IsStartPoint(parent):
                 dis = self.FlyCircleDistance(parent.parent, parent, current, self.minR)
-            else:
-                dis = self.Distance(current, parent)
+                deviation = dis * self.Delte
+                if parent.type == 0:
+                    parent.horizontal = 0
+                else:
+                    parent.horizontal = parent.parent.horizontal + deviation - self.Correction
+                if parent.type == 1:
+                    parent.vertical = 0
+                else:
+                    parent.vertical = parent.parent.vertical + deviation - self.Correction
 
-            deviation = dis * self.Delte
-
-            # 进行误差校正
-            if current.type == 0:
-                current.horizontal = 0
-            else:
-                current.horizontal = parent.horizontal + deviation
-
-            if current.type == 1:
-                current.vertical = 0
-            else:
-                current.vertical = parent.vertical + deviation
+            if self.IsEndPoint(current):
+                european_deviation = self.Distance(current, parent)
+                european_deviation = european_deviation * self.Delte
+                current.horizontal = parent.horizontal + european_deviation - self.Correction
+                current.vertical = parent.vertical + european_deviation - self.Correction
 
             current.parent = parent
             current.cost = self.TotalCost(current)
@@ -188,14 +207,18 @@ class AStar:
                   ',current horizontal:', current.horizontal, ',current vertical:', current.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical)
 
-            # 对查找过程进行画图，只输出结果时候可注释
-            # x = [current.x, parent.x]
-            # y = [current.y, parent.y]
-            # z = [current.z, parent.z]
-            # 将数组中的前两个点进行连线
-            # ax.plot(x, y, z, c='r')
-            # plt.draw()
-            # self.SaveImage(plt)
+            if not parent.parent is None:
+                print(',grandparent horizontal:', parent.parent.horizontal, ',grandparent vertical:',
+                      parent.parent.vertical, )
+
+                # 对查找过程进行画图，只输出结果时候可注释
+                # x = [current.x, parent.x]
+                # y = [current.y, parent.y]
+                # z = [current.z, parent.z]
+                # # 将数组中的前两个点进行连线
+                # ax.plot(x, y, z, c='r')
+                # plt.draw()
+                # self.SaveImage(plt)
 
     def SelectPointInOpenList(self):
         index = 0
@@ -238,9 +261,9 @@ class AStar:
             # 输出最短路径信息
             print('Shortest Path Point [', p.num, ',', p.x, ',', p.y, ',', p.z, ']',
                   ', \ncost: ', p.cost, ', Type: ', p.type,
-                  ',before horizontal:', parent.horizontal + deviation, ',before vertical:',
-                  parent.vertical + deviation, '\n'
-                                               ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
+                  ',before horizontal:', parent.horizontal + deviation - self.Correction, ',before vertical:',
+                  parent.vertical + deviation - self.Correction, '\n',
+                  ',current horizontal:', p.horizontal, ',current vertical:', p.vertical,
                   ',parent horizontal:', parent.horizontal, ',parent vertical:', parent.vertical, '\n')
             parent = p
         # 保存结果图片
