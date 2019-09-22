@@ -17,22 +17,22 @@ class AStar:
         self.minR = 200
 
         # 数据集1的参数
-        # self.Alpha1 = 25
-        # self.Alpha2 = 15
-        # self.Beta1 = 20
-        # self.Beta2 = 25
-        # self.Delte = 0.001
-        # self.Theta = 30
-        # self.Correction = 4.4
+        self.Alpha1 = 25
+        self.Alpha2 = 15
+        self.Beta1 = 20
+        self.Beta2 = 25
+        self.Delte = 0.001
+        self.Theta = 30
+        self.Correction = 4.4
 
         # 数据集2的参数
-        self.Alpha1 = 20
-        self.Alpha2 = 10
-        self.Beta1 = 15
-        self.Beta2 = 20
-        self.Delte = 0.001
-        self.Theta = 20
-        self.Correction = 2.55
+        # self.Alpha1 = 20
+        # self.Alpha2 = 10
+        # self.Beta1 = 15
+        # self.Beta2 = 20
+        # self.Delte = 0.001
+        # self.Theta = 20
+        # self.Correction = 2.55
 
     def Distance(self, current, parent):
         x_dis = current.x - parent.x
